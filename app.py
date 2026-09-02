@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 
 
@@ -386,8 +387,31 @@ else:
         xanchor="left",
         yanchor="bottom",
     )
+    fig_gantt.add_trace(
+        go.Scatter(
+            x=[gantt_df["納品日"].min(), gantt_df["対応期限"].max()],
+            y=[None, None],
+            mode="markers",
+            marker=dict(opacity=0),
+            xaxis="x2",
+            yaxis="y",
+            showlegend=False,
+            hoverinfo="skip",
+        )
+    )
     gantt_height = max(720, len(gantt_df) * 24 + 120)
-    fig_gantt.update_layout(height=gantt_height, margin=dict(l=10, r=10, t=55, b=10), yaxis_title=None)
+    fig_gantt.update_layout(
+        height=gantt_height,
+        margin=dict(l=10, r=10, t=55, b=10),
+        yaxis_title=None,
+        xaxis2=dict(
+            overlaying="x",
+            side="top",
+            matches="x",
+            showgrid=False,
+            ticks="outside",
+        ),
+    )
     with st.container(height=590):
         st.plotly_chart(fig_gantt, use_container_width=True)
 
@@ -408,6 +432,7 @@ table_columns = [
     "設置場所",
 ]
 display_df = deadline_df[table_columns].copy()
+display_df.insert(0, "No.", range(1, len(display_df) + 1))
 display_df["EOL"] = display_df["EOL"].dt.strftime("%Y-%m-%d")
 display_df["保守期限"] = display_df["保守期限"].dt.strftime("%Y-%m-%d")
 st.dataframe(
