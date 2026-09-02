@@ -414,6 +414,7 @@ st.dataframe(
     display_df.style.apply(style_status_rows, axis=1),
     use_container_width=True,
     hide_index=True,
+    height=560,
 )
 
 st.download_button(
