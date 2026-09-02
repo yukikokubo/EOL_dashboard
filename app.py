@@ -78,8 +78,8 @@ def add_status_columns(df: pd.DataFrame, base_date: pd.Timestamp) -> pd.DataFram
         if days <= 30:
             return "30日以内"
         if days <= 90:
-            return "90日以内"
-        return "90日以上"
+            return "31〜90日"
+        return "90日超"
 
     enriched["対応ステータス"] = enriched["対応残日数"].map(label)
     enriched["EOLステータス"] = enriched["EOL残日数"].map(label)
@@ -88,7 +88,7 @@ def add_status_columns(df: pd.DataFrame, base_date: pd.Timestamp) -> pd.DataFram
 
 
 def status_order() -> list[str]:
-    return ["期限切れ", "30日以内", "90日以内", "90日以上", "不明"]
+    return ["期限切れ", "30日以内", "31〜90日", "90日超", "不明"]
 
 
 def filter_by_sidebar(df: pd.DataFrame) -> pd.DataFrame:
@@ -150,15 +150,15 @@ def to_download_csv(df: pd.DataFrame) -> bytes:
 STATUS_COLORS = {
     "期限切れ": "#d94f45",
     "30日以内": "#f28e2b",
-    "90日以内": "#edc948",
-    "90日以上": "#4e79a7",
+    "31〜90日": "#edc948",
+    "90日超": "#4e79a7",
     "不明": "#6b7280",
 }
 
 TABLE_STATUS_COLORS = {
     "期限切れ": "background-color: #fde7e4",
     "30日以内": "background-color: #fff0dc",
-    "90日以内": "background-color: #fff8d7",
+    "31〜90日": "background-color: #fff8d7",
     "不明": "background-color: #f1f3f5",
 }
 
@@ -239,7 +239,7 @@ with kpi_cols[2]:
 with kpi_cols[3]:
     metric_card("30日以内", f"{within_30_count:,} 件")
 with kpi_cols[4]:
-    metric_card("90日以内", f"{within_90_count:,} 件")
+    metric_card("31〜90日", f"{within_90_count - within_30_count:,} 件")
 
 st.divider()
 
@@ -250,13 +250,13 @@ category_counts = (
 )
 
 owner_risk = (
-    filtered_df[filtered_df["対応ステータス"].isin(["期限切れ", "30日以内", "90日以内"])]
+    filtered_df[filtered_df["対応ステータス"].isin(["期限切れ", "30日以内", "31〜90日"])]
     .groupby(["営業担当者", "対応ステータス"], as_index=False)
     .agg(資産数=("資産ID", "count"))
 )
 
 deadline_df = filtered_df.sort_values("対応期限")
-risk_statuses = ["期限切れ", "30日以内", "90日以内"]
+risk_statuses = ["期限切れ", "30日以内", "31〜90日"]
 risk_df = filtered_df[filtered_df["対応ステータス"].isin(risk_statuses)].copy()
 top_risk_companies = (
     risk_df.groupby("企業名", as_index=False)
@@ -445,10 +445,15 @@ table_columns = [
 ]
 display_df = deadline_df[table_columns].copy()
 display_df.insert(0, "No.", range(1, len(display_df) + 1))
+display_df["対応残日数"] = display_df["対応残日数"].astype("Int64")
 display_df["EOL"] = display_df["EOL"].dt.strftime("%Y-%m-%d")
 display_df["保守期限"] = display_df["保守期限"].dt.strftime("%Y-%m-%d")
+styled_display_df = display_df.style.apply(style_status_rows, axis=1).set_properties(
+    subset=["No.", "対応残日数", "数量"],
+    **{"text-align": "right"},
+)
 st.dataframe(
-    display_df.style.apply(style_status_rows, axis=1),
+    styled_display_df,
     use_container_width=True,
     hide_index=True,
     height=560,
