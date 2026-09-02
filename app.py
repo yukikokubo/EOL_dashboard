@@ -117,7 +117,7 @@ def filter_by_sidebar(df: pd.DataFrame) -> pd.DataFrame:
     statuses = st.sidebar.multiselect(
         "対応ステータス",
         status_order(),
-        default=status_order(),
+        placeholder="すべて",
     )
 
     filtered = df.copy()
