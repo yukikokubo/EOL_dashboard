@@ -50,7 +50,7 @@ st.markdown(
 
 
 @st.cache_data
-def load_csv(file) -> pd.DataFrame:
+def load_csv(file, cache_key: float | None = None) -> pd.DataFrame:
     df = pd.read_csv(file)
     missing_columns = [column for column in REQUIRED_COLUMNS if column not in df.columns]
     if missing_columns:
@@ -191,9 +191,10 @@ st.caption("販売済みオフィス機器のEOLと保守期限を営業・顧�
 
 uploaded_file = st.sidebar.file_uploader("CSVアップロード", type=["csv"])
 source = uploaded_file if uploaded_file is not None else DATA_PATH
+cache_key = None if uploaded_file is not None else DATA_PATH.stat().st_mtime
 
 try:
-    raw_df = load_csv(source)
+    raw_df = load_csv(source, cache_key)
 except Exception as exc:
     st.error(str(exc))
     st.stop()
